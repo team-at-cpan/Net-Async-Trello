@@ -10,11 +10,14 @@ our $VERSION = '0.001';
 
 =head1 NAME
 
-Net::Async::Trello
+Net::Async::Trello - low-level Trello API access
 
 =head1 DESCRIPTION
 
 Provides a basic interface for interacting with the L<Trello|https://trello.com> webservice.
+
+It's currently a very crude implementation implementing a small subset of the available API
+features.
 
 =cut
 
@@ -87,6 +90,22 @@ sub boards {
     )
 }
 
+=head2 board
+
+Resolves to the board with the corresponding ID.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * id - the board ID to request
+
+=back
+
+Returns a L<Future>.
+
+=cut
+
 sub board {
 	my ($self, %args) = @_;
     my $id = delete $args{id};
@@ -117,17 +136,6 @@ sub secret { shift->{secret} }
 sub token { shift->{token} }
 sub token_secret { shift->{token_secret} }
 
-sub oauth {
-	my ($self) = @_;
-	$self->{oauth} //= Net::Async::OAuth::Client->new(
-		realm           => 'Trello',
-		consumer_key    => $self->key,
-		consumer_secret => $self->secret,
-		token           => $self->token,
-		token_secret    => $self->token_secret,
-	)
-}
-
 sub http {
 	my ($self) = @_;
 	$self->{http} ||= do {
@@ -147,12 +155,26 @@ sub http {
 	}
 }
 
-sub auth_info {
-	my ($self) = @_;
-}
+=head1 METHODS - Internal
+
+None of these are likely to be stable or of much use to external callers.
+
+=cut
+
+sub base_uri { shift->{base_uri} //= URI->new('https://api.trello.com/1/') }
 
 sub mime_type { shift->{mime_type} //= 'application/json' }
-sub base_uri { shift->{base_uri} //= URI->new('https://api.trello.com/1/') }
+
+sub oauth {
+	my ($self) = @_;
+	$self->{oauth} //= Net::Async::OAuth::Client->new(
+		realm           => 'Trello',
+		consumer_key    => $self->key,
+		consumer_secret => $self->secret,
+		token           => $self->token,
+		token_secret    => $self->token_secret,
+	)
+}
 
 =head2 endpoints
 
