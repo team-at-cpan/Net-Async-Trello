@@ -425,7 +425,6 @@ sub oauth_request {
     my $req = HTTP::Request->new(POST => "$uri");
     $req->protocol('HTTP/1.1');
 
-    warn "Get auth header";
     # $req->header(Authorization => 'Bearer ' . $self->req);
     $self->oauth->configure(
         token => '',
@@ -436,7 +435,7 @@ sub oauth_request {
         uri    => $uri,
     );
     $req->header('Authorization' => $hdr);
-    $log->infof("Resulting auth header for userstream was %s", $hdr);
+    $log->tracef("Resulting auth header for userstream was %s", $hdr);
 
     $req->header('Host' => $uri->host);
     # $req->header('User-Agent' => 'OAuth gem v0.4.4');
@@ -470,7 +469,6 @@ sub oauth_request {
         my $req = HTTP::Request->new(POST => "$uri");
         $req->protocol('HTTP/1.1');
 
-        # $req->header(Authorization => 'Bearer ' . $self->req);
         my $hdr = $self->oauth->authorization_header(
             method => 'POST',
             uri    => $uri,
@@ -479,10 +477,9 @@ sub oauth_request {
             }
         );
         $req->header('Authorization' => $hdr);
-        $log->infof("Resulting auth header was %s", $hdr);
+        $log->tracef("Resulting auth header was %s", $hdr);
 
         $req->header('Host' => $uri->host);
-        # $req->header('User-Agent' => 'OAuth gem v0.4.4');
         $req->header('Connection' => 'close');
         $req->header('Accept' => '*/*');
         $self->http->do_request(
