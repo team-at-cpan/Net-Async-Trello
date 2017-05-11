@@ -300,44 +300,6 @@ sub socket_io {
     });
 }
 
-sub websocket {
-    my ($self, %args) = @_;
-    $self->{ws_connection} ||= $self->socket_io->on_done(sub {
-        my $k = shift;
-        $log->tracef("Will use key [%s] for socket.io", $k);
-    })->then(sub {
-        my ($k) = @_;
-        #
-        # my $uri = URI->new('wss://trello.com/socket.io/1/websocket/' . $k);
-        my $uri = $self->endpoint(
-            'websockets',
-            # token => '506d9fab25bc40ed5ab957b4/' . $self->token
-            # socket.io - only works for socket.io, except not even that
-            # token => $k,
-            # hardcoded from browser
-            token => $self->ws_token,
-        );
-        warn "uri = $uri\n";
-        $self->{ws}->connect(
-            url        => $uri,
-            host       => $uri->host,
-            ($uri->scheme eq 'wss'
-            ? (
-                service      => 443,
-                extensions   => [ qw(SSL) ],
-                SSL_hostname => $uri->host,
-            ) : (
-                service    => 80,
-            ))
-        )
-    })->then(sub {
-        my ($conn) = @_;
-        $log->tracef("Connected");
-        # $conn->send_frame($json->encode({"type"=> "ping","reqid"=>0}));
-        Future->done;
-    });
-}
-
 sub api_get_list {
     use Variable::Disposition qw(retain_future);
     use Scalar::Util qw(refaddr);
@@ -420,44 +382,6 @@ sub pending_requests {
     shift->{pending_requests} //= Adapter::Async::OrderedList::Array->new
 }
 
-sub next_request_id {
-    ++shift->{request_id}
-}
-
-{
-my %types = reverse %Protocol::WebSocket::Frame::TYPES;
-sub on_raw_frame {
-	my ($self, $ws, $frame, $bytes) = @_;
-    my $text = Encode::decode_utf8($bytes);
-    $log->debugf("Have frame opcode %d type %s with bytes [%s]", $frame->opcode, $types{$frame->opcode}, $text);
-
-    # Empty frame is used for PING, send a response back
-    if($frame->opcode == 1) {
-        if(!length($bytes)) {
-            $ws->send_frame('');
-        } else {
-            $log->tracef("<< %s", $text);
-            try {
-                my $data = $json->decode($text);
-                if(my $chan = $data->{idModelChannel}) {
-                    $log->tracef("Notification for [%s] - %s", $chan, $data);
-                    $self->{update_channel}{$chan}->emit($data->{notify});
-                } else {
-                    $log->warnf("No idea what %s is", $data);
-                }
-            } catch {
-                warn "oh noes - $@ from $text";
-            }
-        }
-    }
-}
-}
-
-sub on_frame {
-	my ($self, $ws, $text) = @_;
-    $log->debugf("Have WS frame [%s]", $text);
-}
-
 sub ryu { shift->{ryu} }
 
 sub _add_to_loop {
@@ -468,12 +392,14 @@ sub _add_to_loop {
     );
 
     $self->add_child(
-        $self->{ws} = Net::Async::WebSocket::Client->new(
-            on_raw_frame => $self->curry::weak::on_raw_frame,
-            on_frame     => sub { },
+        $self->{ws} = Net::Async::Trello::WS->new(
+            trello => $self,
+            token => $self->ws_token,
         )
     );
 }
+
+sub websocket { shift->{ws}->connection }
 
 sub oauth_request {
     my ($self, $code) = @_;
