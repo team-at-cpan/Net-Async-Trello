@@ -16,7 +16,7 @@ Net::Async::Trello - low-level Trello API access
 
 Provides a basic interface for interacting with the L<Trello|https://trello.com> webservice.
 
-It's currently a very crude implementation implementing a small subset of the available API
+It's currently a very crude implementation, implementing a small subset of the available API
 features.
 
 =cut
