@@ -83,5 +83,34 @@ sub cards {
     )
 }
 
+=head2 create_card
+
+Creates a new card on this board.
+
+=cut
+
+sub create_card {
+	my ($self, %args) = @_;
+    my %body = (
+        name      => $args{name},
+        desc      => $args{description},
+        pos       => $args{position} // 'bottom',
+    );
+    $body{idList} = ref($args{list}) ? $args{list}->id : $args{list};
+    $body{idMembers} = join(',', map $_->id, @{$args{members}});
+	$self->trello->http_post(
+		uri => URI->new($self->trello->base_uri . 'cards'),
+        body => \%body,
+	)->transform(
+        done => sub {
+            Net::Async::Trello::Card->new(
+                %{ $_[0] },
+                board => $self,
+                trello => $self->trello,
+            )
+        }
+    )
+}
+
 1;
 
