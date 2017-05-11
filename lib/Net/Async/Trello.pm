@@ -223,7 +223,43 @@ sub http_get {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-#			warn "have " . $resp->as_string("\n");
+            return Future->done($json->decode($resp->decoded_content))
+        } catch {
+            $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
+            return Future->fail($@ => json => $resp);
+        }
+    })->else(sub {
+        my ($err, $src, $resp, $req) = @_;
+        $src //= '';
+        if($src eq 'http') {
+            $log->errorf("HTTP error %s, request was %s with response %s", $err, $req->as_string("\n"), $resp->as_string("\n"));
+        } else {
+            $log->errorf("Other failure (%s): %s", $src // 'unknown', $err);
+        }
+        Future->fail(@_);
+    })
+}
+
+sub http_post {
+	my ($self, %args) = @_;
+
+	$args{headers}{Authorization} = $self->oauth->authorization_header(
+		method => 'GET',
+		uri => $args{uri}
+	);
+
+	$log->tracef("POST %s { %s }", ''. $args{uri}, \%args);
+    $self->http->POST(
+        (delete $args{uri}),
+        $json->encode(delete $args{body}),
+        content_type => 'application/json',
+		%args
+    )->then(sub {
+        my ($resp) = @_;
+        $log->tracef("%s => %s", $args{uri}, $resp->decoded_content);
+        return { } if $resp->code == 204;
+        return { } if 3 == ($resp->code / 100);
+        try {
             return Future->done($json->decode($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
