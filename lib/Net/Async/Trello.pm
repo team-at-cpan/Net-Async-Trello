@@ -121,6 +121,29 @@ sub board {
     )
 }
 
+=head2 search
+
+Performs a search.
+
+=cut
+
+sub search {
+	my ($self, %args) = @_;
+	$self->http_get(
+		uri => $self->endpoint(
+            'search',
+            
+        ),
+	)->transform(
+        done => sub {
+            Net::Async::Trello::Card->new(
+                %{ $_[0] },
+                trello => $self,
+            )
+        }
+    )
+}
+
 sub configure {
 	my ($self, %args) = @_;
 	for my $k (grep exists $args{$_}, qw(key secret token token_secret ws_token)) {

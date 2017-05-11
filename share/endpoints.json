@@ -13,6 +13,7 @@
    "card_members_voted_url" : "https://api.trello.com/1/cards/{card}/membersVoted",
    "card_stickers_url" : "https://api.trello.com/1/cards/{card}/stickers",
    "card_actions_url" : "https://api.trello.com/1/cards/{card}/actions{?filter,member}",
+   "search_url" : "https://api.trello.com/1/search{?query,idBoards,idOrganizations,idCards,modelTypes,board_fields,boards_limit,card_fields,cards_limit,cards_page,card_board,card_list,card_members,card_stickers,card_attachments,organization_fields,organizations_limit,member_fields,members_limit,partial}",
    "socket_io_url" : "https://trello.com/socket.io/1/",
    "websockets_url" : "wss://trello.com/1/Session/socket{?token}"
 }
