@@ -34,9 +34,16 @@ $loop->add(
 );
 
 my $cmd = shift or die 'need a command';
-$trello->board(id => $board_id)->then(sub {
-    shift->$cmd
-        ->map('name')
+Future->needs_all(
+    $trello->me,
+    $trello->board(id => $board_id)
+)->then(sub {
+	my ($me, $board) = @_;
+	printf "Name:     %s\n", $me->full_name;
+
+    $board->$cmd
+        ->sprintf_methods('ID %s - %s', qw(id name))
         ->say
         ->completed
 })->get;
+
