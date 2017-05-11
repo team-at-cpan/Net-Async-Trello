@@ -477,7 +477,7 @@ sub oauth_request {
         $self->configure(token => $rslt->{oauth_token});
         $log->tracef("Extracted secret [%s]", $rslt->{oauth_token_secret});
         $self->configure(token_secret => $rslt->{oauth_token_secret});
-        Future->done(+{
+        Future->done({
             token        => $rslt->{oauth_token},
             token_secret => $rslt->{oauth_token_secret},
         })
