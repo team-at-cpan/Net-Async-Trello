@@ -43,7 +43,7 @@ use IO::Async::SSL;
 
 use Net::Async::OAuth::Client;
 
-use Net::Async::WebSocket::Client;
+use Net::Async::Trello::WS;
 
 use Net::Async::Trello::Organisation;
 use Net::Async::Trello::Member;
