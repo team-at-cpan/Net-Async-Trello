@@ -5,6 +5,7 @@ use warnings;
 
 use parent qw(IO::Async::Notifier);
 
+use JSON::MaybeXS;
 use Net::Async::WebSocket::Client;
 
 use Log::Any qw($log);
