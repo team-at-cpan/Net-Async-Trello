@@ -1,3 +1,6 @@
+requires 'indirect', 0;
+requires 'Dir::Self', 0;
+requires 'curry', '>= 1.000';
 requires 'Future', '>= 0.34';
 requires 'HTTP::Request', 0;
 requires 'URI', '>= 1.71';

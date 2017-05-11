@@ -26,6 +26,7 @@ my %WriteMakefileArgs = (
   "PREREQ_PM" => {
     "Adapter::Async" => "0.019",
     "Cache::LRU" => "0.04",
+    "Dir::Self" => 0,
     "File::ShareDir" => "1.102",
     "Future" => "0.34",
     "HTTP::Request" => 0,
@@ -43,7 +44,9 @@ my %WriteMakefileArgs = (
     "URI" => "1.71",
     "URI::QueryParam" => 0,
     "URI::Template" => "0.22",
-    "URI::wss" => 0
+    "URI::wss" => 0,
+    "curry" => "1.000",
+    "indirect" => 0
   },
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
@@ -63,6 +66,7 @@ my %WriteMakefileArgs = (
 my %FallbackPrereqs = (
   "Adapter::Async" => "0.019",
   "Cache::LRU" => "0.04",
+  "Dir::Self" => 0,
   "ExtUtils::MakeMaker" => 0,
   "File::ShareDir" => "1.102",
   "File::Spec" => 0,
@@ -86,7 +90,9 @@ my %FallbackPrereqs = (
   "URI" => "1.71",
   "URI::QueryParam" => 0,
   "URI::Template" => "0.22",
-  "URI::wss" => 0
+  "URI::wss" => 0,
+  "curry" => "1.000",
+  "indirect" => 0
 );
 
 
