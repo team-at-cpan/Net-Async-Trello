@@ -422,6 +422,8 @@ sub _add_to_loop {
     );
 }
 
+sub ws { shift->{ws} }
+
 sub websocket { shift->{ws}->connection }
 
 sub oauth_request {
