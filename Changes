@@ -3,6 +3,11 @@ Revision history for {{$dist->name}}
 {{$NEXT}}
 
 0.002     2017-10-28 23:22:37+08:00 Asia/Kuala_Lumpur
+    No new features.
+
+    Bugs fixed:
+
+    * Websocket support should now work with the upstream version of Net::Async::WebSocket
 
 0.001     2017-05-11 20:47:59+08:00 Asia/Kuala_Lumpur
 	* Initial release
