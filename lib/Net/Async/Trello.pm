@@ -32,7 +32,7 @@ use URI::Template;
 use URI::wss;
 use HTTP::Request;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 
 use File::ShareDir ();
@@ -53,8 +53,6 @@ use Net::Async::Trello::List;
 
 use Ryu::Async;
 use Adapter::Async::OrderedList::Array;
-
-my $json = JSON::MaybeXS->new;
 
 =head2 me
 
@@ -213,7 +211,7 @@ sub endpoints {
                 'endpoints.json'
             )
         ) unless $path->exists;
-        $json->decode($path->slurp_utf8)
+        decode_json_text($path->slurp_utf8)
     };
 }
 
@@ -246,7 +244,7 @@ sub http_get {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-            return Future->done($json->decode($resp->decoded_content))
+            return Future->done(decode_json_text($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
             return Future->fail($@ => json => $resp);
@@ -274,7 +272,7 @@ sub http_post {
 	$log->tracef("POST %s { %s }", ''. $args{uri}, \%args);
     $self->http->POST(
         (delete $args{uri}),
-        $json->encode(delete $args{body}),
+        encode_json_utf8(delete $args{body}),
         content_type => 'application/json',
 		%args
     )->then(sub {
@@ -283,7 +281,7 @@ sub http_post {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-            return Future->done($json->decode($resp->decoded_content))
+            return Future->done(decode_json_text($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
             return Future->fail($@ => json => $resp);

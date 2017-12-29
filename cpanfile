@@ -8,7 +8,7 @@ requires 'URI', '>= 1.71';
 requires 'URI::wss', 0;
 requires 'URI::QueryParam', 0;
 requires 'URI::Template', '>= 0.22';
-requires 'JSON::MaybeXS', 0;
+requires 'JSON::MaybeUTF8', '>= 1.000';
 requires 'File::ShareDir', '>= 1.102';
 requires 'Adapter::Async', '>= 0.019';
 requires 'Ryu', '>= 0.011';
