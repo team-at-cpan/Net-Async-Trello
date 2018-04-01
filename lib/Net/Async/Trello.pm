@@ -331,6 +331,43 @@ sub http_post {
     })
 }
 
+sub http_put {
+	my ($self, %args) = @_;
+
+	$args{headers}{Authorization} = $self->oauth->authorization_header(
+		method => 'PUT',
+		uri => $args{uri}
+	);
+
+	$log->tracef("PUT %s { %s }", ''. $args{uri}, \%args);
+    $self->http->PUT(
+        (delete $args{uri}),
+        '',
+        content_type => 'application/json',
+		%args
+    )->then(sub {
+        my ($resp) = @_;
+        $log->tracef("%s => %s", $args{uri}, $resp->decoded_content);
+        return { } if $resp->code == 204;
+        return { } if 3 == ($resp->code / 100);
+        try {
+            return Future->done($json->decode($resp->decoded_content))
+        } catch {
+            $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
+            return Future->fail($@ => json => $resp);
+        }
+    })->else(sub {
+        my ($err, $src, $resp, $req) = @_;
+        $src //= '';
+        if($src eq 'http') {
+            $log->errorf("HTTP error %s, request was %s with response %s", $err, $req->as_string("\n"), $resp->as_string("\n"));
+        } else {
+            $log->errorf("Other failure (%s): %s", $src // 'unknown', $err);
+        }
+        Future->fail(@_);
+    })
+}
+
 sub socket_io {
 	my ($self, %args) = @_;
 
