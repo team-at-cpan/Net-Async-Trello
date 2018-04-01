@@ -1,4 +1,5 @@
 package Net::Async::Trello::Common;
+
 use strict;
 use warnings;
 

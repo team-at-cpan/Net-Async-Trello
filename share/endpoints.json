@@ -4,6 +4,7 @@
    "board_cards_url" : "https://api.trello.com/1/boards/{board}/cards",
    "cards_url" : "https://api.trello.com/1/cards",
    "card_url" : "https://api.trello.com/1/cards/{card}{?filter,member}",
+   "card_update_url" : "https://api.trello.com/1/cards/{card}{?name,desc,closed,idMembers,idAttachmentCover,idList,idLabels,idBoard,pos,due,dueComplete,subscribed}",
    "card_field_url" : "https://api.trello.com/1/cards/{card}/{field}",
    "card_attachments_url" : "https://api.trello.com/1/cards/{card}/attachments",
    "card_board_url" : "https://api.trello.com/1/cards/{card}/board",

@@ -10,9 +10,10 @@ use parent qw(IO::Async::Notifier);
 use JSON::MaybeXS;
 use Net::Async::WebSocket::Client;
 
+use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
 
-my $json = JSON::MaybeXS->new;
+use constant PING_INTERVAL => 20;
 
 sub configure {
 	my ($self, %args) = @_;
@@ -30,7 +31,7 @@ sub connection {
             token => $self->token,
         );
         $self->{ws}->connect(
-            url        => $uri,
+            url        => "$uri",
             host       => $uri->host,
             ($uri->scheme eq 'wss'
             ? (
@@ -43,63 +44,93 @@ sub connection {
         )->then(sub {
             my ($conn) = @_;
             $log->tracef("Connected");
-            # $conn->send_frame($json->encode({"type"=> "ping","reqid"=>0}));
-            Future->done($conn);
+            $conn->send_frame(
+                buffer => encode_json_utf8({"type" => "ping", "reqid" => 0}),
+                masked => 1
+            )->transform(done => sub { $conn });
+        })->on_fail(sub {
+            $log->errorf('Failed to connect to WS - %s %s %s', $_[0], $_[1], $_[2]);
         });
     };
 }
 
+sub send {
+    my ($self, $data, %args) = @_;
+    $data = encode_json_utf8($data) if ref $data;
+    $log->tracef('>> %s', $data);
+    $self->{ws}->send_frame(
+        buffer => $data,
+        masked => 1
+    )
+}
+
 my %model_for_type = (
-    board => 'Board',
-    card => 'Card'
+    board  => 'Board',
+    card   => 'Card',
+    member => 'Member',
+    list   => 'List',
 );
 
 sub subscribe {
-    my ($self, $type, $id) = @_;
+    my ($self, %args) = @_;
+    my $type = delete $args{type} // die 'need a type for subscription';
+    my $id = delete $args{id} // die 'need an ID for subscription';
+    my @tags = @{ delete $args{tags} || [qw(clientActions updates)] };
+    $self->{update_channel}{$id} = {
+        type   => $type,
+        source => my $src = $self->ryu->source(
+            label => join(':', $type => $id)
+        )
+    };
     $self->connection->then(sub {
         my ($conn) = @_;
-        $log->tracef("Subscribing to %s %s", $type, $id);
+        $log->tracef("Subscribing to %s %s for events %s", $type, $id, join ',', @tags);
         $conn->send_frame(
-            buffer => $json->encode({
+            buffer => encode_json_utf8({
                 idModel          => $id,
                 invitationTokens => [],
                 modelType        => $model_for_type{$type},
                 reqid            => 1,
-                tags             => [qw(clientActions updates)],
+                tags             => \@tags,
                 type             => "subscribe",
             }),
             masked => 1
         );
-    })
+    })->retain;
+    $src
 }
 
 sub on_frame {
 	my ($self, $ws, $bytes) = @_;
-    my $text = Encode::decode_utf8($bytes);
-    $log->debugf("Have frame [%s]", $text);
 
-    if(length $text) {
-        $log->tracef("<< %s", $text);
+    $log->tracef('<< %s', $bytes);
+    if(length $bytes) {
         try {
-            my $data = $json->decode($text);
-            if(my $chan = $data->{idModelChannel}) {
-                $log->tracef("Notification for [%s] - %s", $chan, $data);
-                $self->{update_channel}{$chan}->emit($data->{notify});
+            my $data = decode_json_utf8($bytes);
+            if(my $id = $data->{idModelChannel}) {
+                $log->tracef("Notification for entity ID [%s] - %s", $id, $data);
+                if(my $entry = $self->{update_channel}{$id}) {
+                    $log->tracef("This is a %s, emitting event", $entry->{type});
+                    $entry->{source}->emit($data->{notify});
+                } else {
+                    $log->errorf('Received an update for a source that does not exist: %s', $id);
+                }
             } else {
                 $log->warnf("No idea what %s is", $data);
             }
         } catch {
-            $log->errorf("Exception in websocket raw frame handling: %s (original text %s)", $@, $text);
+            $log->errorf("Exception in websocket raw frame handling: %s (original text %s)", $@, $bytes);
         }
     } else {
         # Empty frame is used for PING, send a response back
+        $log->tracef('Empty frame received, sending one back (ping/pong)');
         $self->pong;
     }
 }
 
 sub pong {
     my ($self) = @_;
-    $self->{ws}->send_frame('');
+    $self->send('');
 }
 
 sub next_request_id {
@@ -120,11 +151,10 @@ sub _add_to_loop {
     );
     $self->add_child(
         my $timer = IO::Async::Timer::Periodic->new(
-            interval => 15,
+            interval => 20,
             on_tick => $self->curry::weak::on_tick,
         )
     );
-    $timer->start;
     Scalar::Util::weaken($self->{timer} = $timer);
 }
 
@@ -137,6 +167,7 @@ sub on_tick {
 
 sub trello { shift->{trello} }
 sub token { shift->{token} }
+sub timer { shift->{timer} }
 
 sub ryu { shift->trello->ryu(@_) }
 

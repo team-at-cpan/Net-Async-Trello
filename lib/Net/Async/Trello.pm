@@ -489,9 +489,7 @@ sub _add_to_loop {
     );
 }
 
-sub ws { shift->{ws} }
-
-sub websocket { shift->{ws}->connection }
+sub websocket { shift->{ws} }
 
 sub oauth_request {
     my ($self, $code) = @_;
