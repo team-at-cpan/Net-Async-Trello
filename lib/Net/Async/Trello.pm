@@ -121,6 +121,37 @@ sub board {
     )
 }
 
+=head2 list
+
+Resolves to the list with the corresponding ID.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * id - the list ID to request
+
+=back
+
+Returns a L<Future>.
+
+=cut
+
+sub list {
+	my ($self, %args) = @_;
+    my $id = delete $args{id};
+	$self->http_get(
+		uri => URI->new($self->base_uri . 'lists/' . $id)
+	)->transform(
+        done => sub {
+            Net::Async::Trello::List->new(
+                %{ $_[0] },
+                trello => $self,
+            )
+        }
+    )
+}
+
 =head2 search
 
 Performs a search.
