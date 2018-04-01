@@ -1,6 +1,17 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - you can now subscribe via websockets
+    - cards can be moved
+
+    Known bugs:
+
+    - paging is fundamentally broken in the current version of the Trello
+    API: you get offset+limit, but ordering is fixed, so as soon as
+    a card is moved from the original board or list the concept breaks.
+
 
 0.002     2017-10-28 23:22:37+08:00 Asia/Kuala_Lumpur
     No new features.
