@@ -35,6 +35,20 @@ sub history {
     )
 }
 
+sub move_to {
+    my ($self, $target, %args) = @_;
+    my $trello = $self->trello;
+	$trello->http_put(
+		uri => $trello->endpoint(
+            'card_update',
+            card => ($self->id // die 'no ID for this card?'),
+            pos  => $target,
+            %args
+        )
+	)->retain
+}
+
+sub id { shift->{id} }
 
 1;
 
