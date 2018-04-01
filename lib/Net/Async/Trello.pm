@@ -416,32 +416,31 @@ sub api_get_list {
         $self->base_uri . $args{uri}
     );
 
-    my $per_page = (delete $args{per_page}) || 100;
+    # Paging is fundamentally broken: ordering is arbitrary, but the
+    # before/since parameters act on e.g. the card creation date.
+    my $per_page = (delete $args{per_page}) || 1000;
     $uri->query_param(
         limit => $per_page
     );
-    my $f = (fmap0 {
-#        $uri->query_param(
-#            before => $per_page
-#        );
-        $self->http_get(
-            uri => $uri,
-        )->on_done(sub {
-            $log->tracef("we received %s", $_[0]);
-            $src->emit(
-                $args{class}->new(
-                    %$_,
-                    ($args{extra} ? %{$args{extra}} : ()),
-                    trello => $self
-                )
-            ) for @{ $_[0] };
-            $src->finish;
-        })->on_fail(sub {
-            $src->fail(@_)
-        })->on_cancel(sub {
-            $src->cancel
-        });
-    } foreach => [1]);
+    my $request_uri = $uri->clone;
+    my $f = $self->http_get(
+        uri => $request_uri,
+    )->then(sub {
+        $src->emit(
+            $args{class}->new(
+                %$_,
+                ($args{extra} ? %{$args{extra}} : ()),
+                trello => $self
+            )
+        ) for @{ $_[0] };
+        Future->done;
+    })->on_done(sub {
+        $src->finish;
+    })->on_fail(sub {
+        $src->fail(@_)
+    })->on_cancel(sub {
+        $src->cancel
+    })->retain;
 
     # If our source finishes earlier than our HTTP request, then cancel the request
     $src->completed->on_ready(sub {
@@ -454,9 +453,9 @@ sub api_get_list {
     my $refaddr = Scalar::Util::refaddr($f);
     retain_future(
         $self->pending_requests->push([ {
-            id  => $refaddr,
-            src => $src,
-            uri => $args{uri},
+            id     => $refaddr,
+            src    => $src,
+            uri    => $args{uri},
             future => $f,
         } ])->then(sub {
             $f->on_ready(sub {
