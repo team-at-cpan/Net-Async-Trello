@@ -412,17 +412,22 @@ sub _add_to_loop {
         $self->{ryu} = Ryu::Async->new
     );
 
-    $self->add_child(
-        $self->{ws} = Net::Async::Trello::WS->new(
-            trello => $self,
-            token => $self->ws_token,
-        )
-    );
 }
 
-sub ws { shift->{ws} }
+sub ws {
+    my ($self) = @_;
+    $self->{ws} //= do {
+        $self->add_child(
+            my $ws = Net::Async::Trello::WS->new(
+                trello => $self,
+                token  => $self->ws_token,
+            )
+        );
+        $ws
+    }
+}
 
-sub websocket { shift->{ws}->connection }
+sub websocket { shift->ws->connection }
 
 sub oauth_request {
     my ($self, $code) = @_;
