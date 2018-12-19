@@ -21,6 +21,14 @@ use URI ();
 
 =cut
 
+=head2 id
+
+Provides an accessor for C<id>.
+
+=cut
+
+sub id { shift->{id} }
+
 =head2 list
 
 Provides an accessor for C<list>.
