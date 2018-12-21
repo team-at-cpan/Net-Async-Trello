@@ -75,8 +75,9 @@ sub lists {
 sub cards {
 	my ($self, %args) = @_;
     $self->trello->api_get_list(
-		uri => 'boards/' . $self->id . '/cards',
+		uri => 'boards/' . $self->id . '/cards?filter=visible',
         class => 'Net::Async::Trello::Card',
+        per_page => 1000,
         extra => {
             board  => $self,
         },
