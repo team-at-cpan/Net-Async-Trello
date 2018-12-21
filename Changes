@@ -1,6 +1,14 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - card updates
+    - default to visible cards and increase the limit for `::Board->cards`
+
+    Bugs fixed:
+
+    - no need to connect to websocket endpoint unless requested
 
 0.002     2017-10-28 23:22:37+08:00 Asia/Kuala_Lumpur
     No new features.
