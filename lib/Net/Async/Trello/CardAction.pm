@@ -3,6 +3,8 @@ package Net::Async::Trello::CardAction;
 use strict;
 use warnings;
 
+# VERSION
+
 use parent qw(Net::Async::Trello::Generated::CardAction);
 
 =head1 NAME

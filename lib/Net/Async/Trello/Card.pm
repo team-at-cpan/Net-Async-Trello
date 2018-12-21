@@ -3,6 +3,8 @@ package Net::Async::Trello::Card;
 use strict;
 use warnings;
 
+# VERSION
+
 use parent qw(Net::Async::Trello::Generated::Card);
 
 use Log::Any qw($log);

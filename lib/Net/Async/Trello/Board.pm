@@ -3,6 +3,8 @@ package Net::Async::Trello::Board;
 use strict;
 use warnings;
 
+# VERSION
+
 use parent qw(Net::Async::Trello::Generated::Board);
 
 use JSON::MaybeXS;

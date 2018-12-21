@@ -3,6 +3,8 @@ package Net::Async::Trello::Organisation;
 use strict;
 use warnings;
 
+# VERSION
+
 use parent qw(Net::Async::Trello::Generated::Organisation);
 
 =head1 NAME

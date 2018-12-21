@@ -3,9 +3,11 @@ package Net::Async::Trello::WS;
 use strict;
 use warnings;
 
-use Syntax::Keyword::Try;
+# VERSION
 
 use parent qw(IO::Async::Notifier);
+
+use Syntax::Keyword::Try;
 
 use JSON::MaybeXS;
 use Net::Async::WebSocket::Client;

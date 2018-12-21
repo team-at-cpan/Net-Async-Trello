@@ -1,6 +1,9 @@
 package Net::Async::Trello::Common;
+
 use strict;
 use warnings;
+
+# VERSION
 
 =head2 new
 
