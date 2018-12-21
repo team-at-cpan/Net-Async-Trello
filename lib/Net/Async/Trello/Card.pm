@@ -35,6 +35,16 @@ sub history {
     )
 }
 
+sub update {
+    my ($self, %args) = @_;
+    my $trello = $self->trello;
+	$trello->http_put(
+		uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id
+        ),
+        body => \%args
+	)
+}
 
 1;
 
