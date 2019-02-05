@@ -1,6 +1,11 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    No new features.
+
+    Bugs fixed:
+
+    - UTF-8 encoding was not correctly preserved on text
 
 0.003     2018-12-21 12:40:11+08:00 Asia/Kuala_Lumpur
     New features:
