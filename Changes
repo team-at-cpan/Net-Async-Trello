@@ -1,6 +1,8 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+
+0.005     2019-06-04 13:51:56+08:00 Asia/Kuala_Lumpur
     New features:
 
     - support parameters for ->board, thanks to Bill Marriott (https://github.com/team-at-cpan/Net-Async-Trello/pull/3)
