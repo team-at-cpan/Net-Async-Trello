@@ -108,7 +108,7 @@ sub board {
 	my ($self, %args) = @_;
     my $id = delete $args{id};
     my $uri = URI->new($self->base_uri . 'board/' . $id);
-    $uri->query_param(%args);
+    $uri->query_param($_ => $args{$_}) for keys %args;
 	$self->http_get(
 		uri => $uri
 	)->transform(
