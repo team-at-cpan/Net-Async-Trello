@@ -49,6 +49,7 @@ use Net::Async::Trello::Organisation;
 use Net::Async::Trello::Member;
 use Net::Async::Trello::Board;
 use Net::Async::Trello::Card;
+use Net::Async::Trello::CardAction;
 use Net::Async::Trello::List;
 
 use Ryu::Async;
