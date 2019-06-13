@@ -137,6 +137,21 @@ sub card {
     )
 }
 
+sub member {
+    my ($self, %args) = @_;
+    my $id = delete $args{id};
+    $self->http_get(
+        uri => URI->new($self->base_uri . 'members/' . $id)
+    )->transform(
+        done => sub {
+            Net::Async::Trello::Member->new(
+                %{ $_[0] },
+                trello => $self,
+            )
+        }
+    )
+}
+
 =head2 search
 
 Performs a search.
