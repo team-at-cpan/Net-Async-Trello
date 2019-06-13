@@ -198,10 +198,10 @@ sub http {
             my $ua = Net::Async::HTTP->new(
                 fail_on_error            => 1,
                 max_connections_per_host => 2,
-                pipeline                 => 0,
+                pipeline                 => 1,
                 max_in_flight            => 4,
                 decode_content           => 1,
-                timeout                  => 30,
+                stall_timeout            => 60,
                 user_agent               => 'Mozilla/4.0 (perl; Net::Async::Trello; TEAM@cpan.org)',
             )
         );
