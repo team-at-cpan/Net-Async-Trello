@@ -412,7 +412,10 @@ sub api_get_list {
     ? $self->endpoint(
         $args{endpoint},
         %{$args{endpoint_args}}
-    ) : URI->new(
+    )
+    : ref($args{uri})
+    ? $args{uri}
+    : URI->new(
         $self->base_uri . $args{uri}
     );
 
