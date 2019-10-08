@@ -1,3 +1,4 @@
+
 package Net::Async::Trello;
 # ABSTRACT: Interaction with the trello.com API
 
@@ -32,7 +33,7 @@ use URI::Template;
 use URI::wss;
 use HTTP::Request;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 
 use File::ShareDir ();
@@ -53,8 +54,6 @@ use Net::Async::Trello::List;
 
 use Ryu::Async;
 use Adapter::Async::OrderedList::Array;
-
-my $json = JSON::MaybeXS->new;
 
 =head2 me
 
@@ -123,30 +122,14 @@ sub board {
     )
 }
 
-=head2 list
-
-Resolves to the list with the corresponding ID.
-
-Takes the following named parameters:
-
-=over 4
-
-=item * id - the list ID to request
-
-=back
-
-Returns a L<Future>.
-
-=cut
-
-sub list {
+sub card {
 	my ($self, %args) = @_;
     my $id = delete $args{id};
 	$self->http_get(
-		uri => URI->new($self->base_uri . 'lists/' . $id)
+		uri => URI->new($self->base_uri . 'cards/' . $id)
 	)->transform(
         done => sub {
-            Net::Async::Trello::List->new(
+            Net::Async::Trello::Card->new(
                 %{ $_[0] },
                 trello => $self,
             )
@@ -156,23 +139,65 @@ sub list {
 
 =head2 search
 
-Performs a search.
+Description performs a search for Trello objects by string
+see L<https://developers.trello.com/reference/#search>
+
+   
+    $loop->add( my $trello =
+        Net::Async::Trello->new( %cfg{qw(key secret token token_secret)}, ) );
+        $trello->search(card_fields =>['name','url','dateLastActivity'], query =>'Shopping List')->
+      then(
+        sub {
+            my (%result) = @_;
+            #print the url of the first card returned.
+            printf "Card %s url\n", $result{cards}->[0]->url;
+            Future->done;
+        }
+    )->get;
+
+Takes the arguments as shown in the Trello API documentation as named parameters.  The only compulsory argument is query which takes a string that is search for. 
+
+=over 4
+
+=item 
+
+=back
+
+Returns a Hash with keys matching the objects returned even if they are empty. 
+for the types except for options the values will be an array Reference of matching Net::Async::Trello::{type} 
+E.G.  Net::Async::Trello:Card, Net::Async::Trello:Board,  Net::Async::Trello:Member
+fot the options key it is a straight Hash Reference copy of the returned options value 
 
 =cut
 
+
 sub search {
-	my ($self, %args) = @_;
-	$self->http_get(
-		uri => $self->endpoint(
-            'search',
-            
-        ),
-	)->transform(
+    my ($self, %args) = @_;
+    my $uri =   URI->new($self->base_uri.'search');
+    my $query = $uri->query_form(\%args);
+    $self->http_get(
+        uri => $uri 
+    )->transform(
         done => sub {
-            Net::Async::Trello::Card->new(
-                %{ $_[0] },
-                trello => $self,
-            )
+            my ($results) = @_;
+            my %types; 
+            foreach my $type (keys(%{$results})) {
+                my $module_postfix = ucfirst(substr ($type, 0, -1));
+                $types{$type} = [];
+                if ($type eq 'options'){
+                    $types{options} = $results->{options};
+                    next;    
+                }
+                foreach my $result (@{$results->{$type}}) {
+                    my $module_name = 'Net::Async::Trello::'.$module_postfix;
+                    my $object =  $module_name->new(
+                        %{$result},
+                        trello => $self,
+                    );
+                    push @{$types{$type}}, $object;
+                }
+            }
+            return %types;
         }
     )
 }
@@ -246,7 +271,7 @@ sub endpoints {
                 'endpoints.json'
             )
         ) unless $path->exists;
-        $json->decode($path->slurp_utf8)
+        decode_json_text($path->slurp_utf8)
     };
 }
 
@@ -263,7 +288,6 @@ sub endpoint {
 
 sub http_get {
 	my ($self, %args) = @_;
-
 	$args{headers}{Authorization} = $self->oauth->authorization_header(
 		method => 'GET',
 		uri => $args{uri}
@@ -279,7 +303,7 @@ sub http_get {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-            return Future->done($json->decode($resp->decoded_content))
+            return Future->done(decode_json_text($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
             return Future->fail($@ => json => $resp);
@@ -307,7 +331,7 @@ sub http_post {
 	$log->tracef("POST %s { %s }", ''. $args{uri}, \%args);
     $self->http->POST(
         (delete $args{uri}),
-        $json->encode(delete $args{body}),
+        encode_json_utf8(delete $args{body}),
         content_type => 'application/json',
 		%args
     )->then(sub {
@@ -316,7 +340,7 @@ sub http_post {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-            return Future->done($json->decode($resp->decoded_content))
+            return Future->done(decode_json_text($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
             return Future->fail($@ => json => $resp);
@@ -338,13 +362,13 @@ sub http_put {
 
 	$args{headers}{Authorization} = $self->oauth->authorization_header(
 		method => 'PUT',
-		uri => $args{uri}
+		uri    => $args{uri}
 	);
 
 	$log->tracef("PUT %s { %s }", ''. $args{uri}, \%args);
     $self->http->PUT(
         (delete $args{uri}),
-        '',
+        encode_json_utf8(delete $args{body}),
         content_type => 'application/json',
 		%args
     )->then(sub {
@@ -353,7 +377,7 @@ sub http_put {
         return { } if $resp->code == 204;
         return { } if 3 == ($resp->code / 100);
         try {
-            return Future->done($json->decode($resp->decoded_content))
+            return Future->done(decode_json_text($resp->decoded_content))
         } catch {
             $log->errorf("JSON decoding error %s from HTTP response %s", $@, $resp->as_string("\n"));
             return Future->fail($@ => json => $resp);
@@ -418,31 +442,32 @@ sub api_get_list {
         $self->base_uri . $args{uri}
     );
 
-    # Paging is fundamentally broken: ordering is arbitrary, but the
-    # before/since parameters act on e.g. the card creation date.
-    my $per_page = (delete $args{per_page}) || 1000;
+    my $per_page = (delete $args{per_page}) || 100;
     $uri->query_param(
         limit => $per_page
     );
-    my $request_uri = $uri->clone;
-    my $f = $self->http_get(
-        uri => $request_uri,
-    )->then(sub {
-        $src->emit(
-            $args{class}->new(
-                %$_,
-                ($args{extra} ? %{$args{extra}} : ()),
-                trello => $self
-            )
-        ) for @{ $_[0] };
-        Future->done;
-    })->on_done(sub {
-        $src->finish;
-    })->on_fail(sub {
-        $src->fail(@_)
-    })->on_cancel(sub {
-        $src->cancel
-    })->retain;
+    my $f = (fmap0 {
+#        $uri->query_param(
+#            before => $per_page
+#        );
+        $self->http_get(
+            uri => $uri,
+        )->on_done(sub {
+            $log->tracef("we received %s", $_[0]);
+            $src->emit(
+                $args{class}->new(
+                    %$_,
+                    ($args{extra} ? %{$args{extra}} : ()),
+                    trello => $self
+                )
+            ) for @{ $_[0] };
+            $src->finish;
+        })->on_fail(sub {
+            $src->fail(@_)
+        })->on_cancel(sub {
+            $src->cancel
+        });
+    } foreach => [1]);
 
     # If our source finishes earlier than our HTTP request, then cancel the request
     $src->completed->on_ready(sub {
@@ -455,9 +480,9 @@ sub api_get_list {
     my $refaddr = Scalar::Util::refaddr($f);
     retain_future(
         $self->pending_requests->push([ {
-            id     => $refaddr,
-            src    => $src,
-            uri    => $args{uri},
+            id  => $refaddr,
+            src => $src,
+            uri => $args{uri},
             future => $f,
         } ])->then(sub {
             $f->on_ready(sub {
@@ -483,15 +508,22 @@ sub _add_to_loop {
         $self->{ryu} = Ryu::Async->new
     );
 
-    $self->add_child(
-        $self->{ws} = Net::Async::Trello::WS->new(
-            trello => $self,
-            token => $self->ws_token,
-        )
-    );
 }
 
-sub websocket { shift->{ws} }
+sub ws {
+    my ($self) = @_;
+    $self->{ws} //= do {
+        $self->add_child(
+            my $ws = Net::Async::Trello::WS->new(
+                trello => $self,
+                token  => $self->ws_token,
+            )
+        );
+        $ws
+       }
+}
+
+sub websocket { shift->ws->connection }
 
 sub oauth_request {
     my ($self, $code) = @_;
