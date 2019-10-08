@@ -108,8 +108,10 @@ Returns a L<Future>.
 sub board {
 	my ($self, %args) = @_;
     my $id = delete $args{id};
+    my $uri = URI->new($self->base_uri . 'board/' . $id);
+    $uri->query_param(%args);
 	$self->http_get(
-		uri => URI->new($self->base_uri . 'board/' . $id)
+		uri => $uri
 	)->transform(
         done => sub {
             Net::Async::Trello::Board->new(
