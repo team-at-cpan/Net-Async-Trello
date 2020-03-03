@@ -17,8 +17,6 @@ my $json = JSON::MaybeXS->new;
 =cut
 
 sub subscribe {
-    use Variable::Disposition qw(retain_future);
-    use namespace::clean qw(retain_future);
 	my ($self, %args) = @_;
     my $trello = $self->trello;
     my $board_id = $self->id;
@@ -28,27 +26,25 @@ sub subscribe {
         $self->{subscribed}{board}{$board_id} = my $src = $trello->ryu->source(
             label => "board:$board_id"
         );
-        retain_future(
-            $trello->websocket->then(sub {
-                my $req_id = $trello->next_request_id;
-                my $txt = $json->encode({
-                    type             => "subscribe",
-                    modelType        => "Board",
-                    idModel          => $board_id,
-                    tags             => [qw(clientActions updates)],
-                    invitationTokens => [],
-                    reqid            => $req_id,
-                });
-            # $txt = '3:::{"sFxn":"ping","rgarg":[],"reqid":' . $req_id . ',"token":"' . $trello->token . '"}';
-                $log->tracef(">> %s", $txt);
-                $trello->loop->delay_future(after => 1.1)->then(sub {
-                    $trello->{ws}->send_frame(
-                        buffer => $txt,
-                        masked => 1,
-                    )
-                })
+        $trello->websocket->then(sub {
+            my $req_id = $trello->next_request_id;
+            my $txt = $json->encode({
+                type             => "subscribe",
+                modelType        => "Board",
+                idModel          => $board_id,
+                tags             => [qw(clientActions updates)],
+                invitationTokens => [],
+                reqid            => $req_id,
+            });
+        # $txt = '3:::{"sFxn":"ping","rgarg":[],"reqid":' . $req_id . ',"token":"' . $trello->token . '"}';
+            $log->tracef(">> %s", $txt);
+            $trello->loop->delay_future(after => 1.1)->then(sub {
+                $trello->{ws}->send_frame(
+                    buffer => $txt,
+                    masked => 1,
+                )
             })
-        );
+        })->retain;
         $self->{updated_channel} ||= {};
         $self->{update_channel}{$board_id} = $src;
     }
@@ -62,7 +58,7 @@ sub subscribe {
 sub lists {
 	my ($self, %args) = @_;
     $self->trello->api_get_list(
-		uri => 'boards/' . $self->id . '/lists',
+		uri => 'boards/' . $self->id . '/lists', # ?filter=closed',
         class => 'Net::Async::Trello::List',
         extra => {
             board  => $self,
@@ -117,3 +113,12 @@ sub create_card {
 
 1;
 
+__END__
+
+=head1 AUTHOR
+
+Tom Molesworth <TEAM@cpan.org>
+
+=head1 LICENSE
+
+Copyright Tom Molesworth 2014-2019. Licensed under the same terms as Perl itself.

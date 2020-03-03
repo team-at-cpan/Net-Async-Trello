@@ -6,7 +6,7 @@ use warnings;
 
 use parent qw(IO::Async::Notifier);
 
-our $VERSION = '0.005';
+our $VERSION = '0.006';
 
 =head1 NAME
 
@@ -22,6 +22,8 @@ features.
 =cut
 
 no indirect;
+
+use overload '""' => sub { 'Net::Async::Trello' }, bool => sub { 1 }, fallback => 1;
 
 use Dir::Self;
 use curry;
@@ -122,6 +124,22 @@ sub board {
     )
 }
 
+=head2 card
+
+Returns information about a specific card.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<id> - the card ID to retrieve
+
+=back
+
+Resolves to a L<Net::Async::Trello::Card> instance.
+
+=cut
+
 sub card {
     my ($self, %args) = @_;
     my $id = delete $args{id};
@@ -136,6 +154,22 @@ sub card {
         }
     )
 }
+
+=head2 member
+
+Returns information about a specific person (board/card member).
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<id> - the ID to retrieve
+
+=back
+
+Resolves to a L<Net::Async::Trello::Member> instance.
+
+=cut
 
 sub member {
     my ($self, %args) = @_;
@@ -163,7 +197,7 @@ sub search {
     $self->http_get(
         uri => $self->endpoint(
             'search',
-            
+            %args
         ),
     )->transform(
         done => sub {
@@ -197,8 +231,9 @@ sub http {
         $self->add_child(
             my $ua = Net::Async::HTTP->new(
                 fail_on_error            => 1,
+                close_after_request      => 1,
                 max_connections_per_host => 2,
-                pipeline                 => 1,
+                pipeline                 => 0,
                 max_in_flight            => 4,
                 decode_content           => 1,
                 stall_timeout            => 60,
@@ -587,11 +622,13 @@ sub oauth_request {
 
 1;
 
+__END__
+
 =head1 AUTHOR
 
 Tom Molesworth <TEAM@cpan.org>
 
 =head1 LICENSE
 
-Copyright Tom Molesworth 2014-2017. Licensed under the same terms as Perl itself.
+Copyright Tom Molesworth 2014-2019. Licensed under the same terms as Perl itself.
 
