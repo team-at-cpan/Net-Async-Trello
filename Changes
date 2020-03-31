@@ -6,6 +6,11 @@ Revision history for {{$dist->name}}
     - ->member method for retrieving information about a specific person
     - the ::Card->history method now returns proper ::CardAction instances, hopefully making it more useful
 
+    Bugs fixed:
+
+    - websocket handling wasn't working well, it should at least now be usable for subscribing to events,
+    although objects are not yet mapped properly
+
 0.005     2019-06-04 13:51:56+08:00 Asia/Kuala_Lumpur
     New features:
 
