@@ -48,5 +48,16 @@ sub update {
 	)
 }
 
+sub add_comment {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+    $trello->http_post(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions/comments?text=' . $comment
+        ),
+        body => { }
+    )
+}
+
 1;
 
