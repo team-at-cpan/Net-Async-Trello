@@ -188,23 +188,60 @@ sub member {
 
 =head2 search
 
-Performs a search.
+Performs a search for Trello objects by string, see L<https://developers.trello.com/reference/#search>
+for details on search options available.
+
+Example:
+   
+ my (%result) = await $trello->search(
+  card_fields => [ qw(name url dateLastActivity) ],
+  query       => 'Shopping List',
+ );
+ # print the url of the first card returned.
+ my $card = $result{cards}->[0];
+ # This should be a Net::Async::Trello::Card instance, so we have a ->url method:
+ printf "Card %s url\n", $card->url;
+
+Takes the arguments as shown in the Trello API documentation as named parameters.
+
+The only compulsory argument is C<query>, the text string to search for.
+
+Returns a L<Future> which resolves to a list of key-value pairs.
+The value will be an instance of the appropriate
+type, with the exception of C<options> which is a plain hashref.
 
 =cut
 
 sub search {
     my ($self, %args) = @_;
+    my $uri = $self->endpoint(
+        'search',
+    );
+    $uri->query_param($_ => $args{$_}) for keys %args;
+
     $self->http_get(
-        uri => $self->endpoint(
-            'search',
-            %args
-        ),
+        uri => $uri,
     )->transform(
         done => sub {
-            Net::Async::Trello::Card->new(
-                %{ $_[0] },
-                trello => $self,
-            )
+            my ($results) = @_;
+			my %types = (
+                options => delete($results->{options}),
+            );
+            for my $type (keys(%{$results})) {
+                # Drop the trailing `s` and hope that we don't run into English issues...
+                my $module_postfix = ucfirst($type =~ s{s$}{}r);
+
+                $types{$type} = [];
+                for my $item (@{$results->{$type}}) {
+                    my $class = 'Net::Async::Trello::' . $module_postfix;
+                    my $object = $class->new(
+                        trello => $self,
+                        %{$item},
+                    );
+                    push @{$types{$type}}, $object;
+                }
+            }
+            return %types;
         }
     )
 }
@@ -626,7 +663,7 @@ __END__
 
 =head1 AUTHOR
 
-Tom Molesworth <TEAM@cpan.org>
+Tom Molesworth <TEAM@cpan.org> with contributions from C<@michaelmueller-binary>.
 
 =head1 LICENSE
 
