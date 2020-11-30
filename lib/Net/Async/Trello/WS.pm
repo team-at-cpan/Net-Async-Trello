@@ -36,14 +36,12 @@ sub connection {
         $self->{ws}->connect(
             url        => $uri,
             host       => $uri->host,
-            ($uri->scheme eq 'wss'
-            ? (
-#                service      => 443,
-#                extensions   => [ qw(SSL) ],
-                SSL_hostname => $uri->host,
-            ) : (
-#                service    => 80,
-            ))
+            (
+                $uri->scheme eq 'wss'
+                ? (
+                    SSL_hostname => $uri->host,
+                ) : ()
+            )
         )->then(sub {
             my ($conn) = @_;
             $log->tracef("Connected");
@@ -61,6 +59,7 @@ my %model_for_type = (
 sub next_request_id {
     return (shift->{last_request_id} //= 0)++;
 }
+
 sub subscribe {
     my ($self, $type, $id) = @_;
     $self->connection->then(sub {
