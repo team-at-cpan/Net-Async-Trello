@@ -75,6 +75,49 @@ sub add_comment {
     )
 }
 
+=head2 in_list_since
+
+Returns the date when this card was moved to the current list, as an ISO8601 string.
+
+=cut
+
+sub in_list_since {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+	# We call the endpoint with limit=1 here to find the most recent idList update
+    $trello->http_get(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions?filter=updateCard:idList&limit=1'
+        ),
+    )->then(sub {
+        my $date = shift->[0]->{date}
+			or return Future->done($self->created_at);
+        Future->done($date);
+    })
+}
+
+=head2 created_at
+
+Uses the card action history to find when it was created.
+
+Note that the date is currently embedded in the ID, so if you
+want to avoid the extra API call you can use that information
+via an algorithm such as L<https://steveridout.github.io/mongo-object-time/>
+
+=cut
+
+sub created_at {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+    $trello->http_get(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions&limit=1&since=0'
+        ),
+    )->then(sub {
+        Future->done(shift->[0]->{date});
+    })
+}
+
 1;
 
 =head1 AUTHOR
