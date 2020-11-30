@@ -34,24 +34,35 @@ sub history {
         $uri->query_param(filter => 'all')
     }
     $uri->query_param($_ => $args{$_}) for keys %args;
-	$trello->api_get_list(
-		uri   => $uri,
+    $trello->api_get_list(
+        uri   => $uri,
         class => 'Net::Async::Trello::CardAction',
         extra => {
             card => $self
         }
-	)
+    )
 }
 
 sub update {
     my ($self, %args) = @_;
     my $trello = $self->trello;
-	$trello->http_put(
-		uri => URI->new(
+    $trello->http_put(
+        uri => URI->new(
             $trello->base_uri . 'cards/' . $self->id
         ),
         body => \%args
-	)
+    )
+}
+
+sub add_comment {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+    $trello->http_post(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions/comments?text=' . $comment
+        ),
+        body => { }
+    )
 }
 
 1;
