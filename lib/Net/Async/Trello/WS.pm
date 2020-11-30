@@ -82,10 +82,13 @@ sub subscribe {
     })
 }
 
+sub websocket_events { my ($self) = @_; $self->{websocket_events} //= $self->ryu->source }
+
 sub on_frame {
 	my ($self, $ws, $bytes) = @_;
     my $text = $bytes; # Encode::decode_utf8($bytes);
     $log->debugf("Have frame [%s]", $text);
+    $self->websocket_events->emit($text);
 
     if(length $text) {
         $log->tracef("<< %s", $text);
