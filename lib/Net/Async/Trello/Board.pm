@@ -82,6 +82,22 @@ sub cards {
     )
 }
 
+=head2 members
+
+=cut
+
+sub members {
+	my ($self, %args) = @_;
+    $self->trello->api_get_list(
+		uri => 'boards/' . $self->id . '/members',
+        class => 'Net::Async::Trello::Member',
+        per_page => 1000,
+        extra => {
+            board  => $self,
+        },
+    )
+}
+
 =head2 create_card
 
 Creates a new card on this board.
