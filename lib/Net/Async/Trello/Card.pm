@@ -9,6 +9,7 @@ use parent qw(Net::Async::Trello::Generated::Card);
 
 use Unicode::UTF8 ();
 use Log::Any qw($log);
+use DateTime::Format::Strptime;
 
 =head1 NAME
 
@@ -116,6 +117,44 @@ sub created_at {
     )->then(sub {
         Future->done(shift->[0]->{date});
     })
+}
+
+sub add_comment {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+    $trello->http_post(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions/comments?text=' . $comment
+        ),
+        body => { }
+    )
+}
+
+sub in_list_since {
+    my ($self, $comment) = @_;
+    my $trello = $self->trello;
+    $trello->http_get(
+        uri => URI->new(
+            $trello->base_uri . 'cards/' . $self->id . '/actions?filter=updateCard:idList&limit=1'
+        ),
+    )->then(sub {
+        # Note we call the endpoint with limit=1, we are interested in the last idList updated date.
+        my $list = shift;
+        my $data = shift @$list;
+        # If a card idList was not updated is safe to assume its creation datetime suffices
+        # the requirement.
+        my $date_str = $data->{date};
+        return Future->done($self->created_at) unless $date_str;
+        # Trello API gives date strings such as 2020-06-02T17:35:23.724Z
+        my $parser = DateTime::Format::Strptime->new(pattern => '%FT%T.%NZ');
+        Future->done($parser->parse_datetime($date_str))
+    })
+}
+
+sub created_at {
+    my ($self) = @_;
+    my $epoch = hex substr $self->id, 0, 8;
+    DateTime->from_epoch(epoch => $epoch)
 }
 
 1;
