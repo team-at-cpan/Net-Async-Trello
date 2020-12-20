@@ -25,7 +25,7 @@ sub history {
     my $trello = $self->trello;
     my $filter = delete $args{filter};
     my $uri = URI->new(
-        $trello->base_uri . '/cards/' . $self->id . '/actions?member=false'
+        $trello->base_uri . 'cards/' . $self->id . '/actions/?member=false'
     );
     if(ref $filter) {
         $uri->query_param(filter => @$filter)
