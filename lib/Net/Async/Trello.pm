@@ -143,8 +143,10 @@ Resolves to a L<Net::Async::Trello::Card> instance.
 sub card {
     my ($self, %args) = @_;
     my $id = delete $args{id};
+    my $uri = URI->new($self->base_uri . 'cards/' . $id);
+    $uri->query_param($_ => delete $args{$_}) for keys %args;
     $self->http_get(
-        uri => URI->new($self->base_uri . 'cards/' . $id)
+        uri => $uri,
     )->transform(
         done => sub {
             Net::Async::Trello::Card->new(
