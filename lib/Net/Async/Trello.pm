@@ -270,12 +270,12 @@ sub http {
         $self->add_child(
             my $ua = Net::Async::HTTP->new(
                 fail_on_error            => 1,
-                close_after_request      => 1,
+                close_after_request      => 0,
                 max_connections_per_host => 2,
-                pipeline                 => 0,
+                pipeline                 => 1,
                 max_in_flight            => 4,
                 decode_content           => 1,
-                stall_timeout            => 60,
+                stall_timeout            => 15,
                 user_agent               => 'Mozilla/4.0 (perl; Net::Async::Trello; TEAM@cpan.org)',
             )
         );
